@@ -1,15 +1,6 @@
 #include "Envelope.h"
 
 EnvelopeADSR::EnvelopeADSR()
-	:
-	dAttackTime(0.11),
-	dDecayTime(0.01),
-	dStartAmplitude(1.0),
-	dSustainAmplitude(0.8),
-	dReleaseTime(0.20),
-	dTriggerOnTime(0.0),
-	dTriggerOffTime(0.0),
-	bNoteOn(false)
 {
 
 }

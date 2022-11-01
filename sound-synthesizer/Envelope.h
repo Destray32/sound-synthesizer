@@ -16,9 +16,13 @@ struct EnvelopeADSR
 
 
 
-	double	dAttackTime, dDecayTime, dReleaseTime,
-		dSustainAmplitude, dStartAmplitude, dTriggerOnTime,
-		dTriggerOffTime;
+	double	dAttackTime, 
+			dDecayTime, 
+			dReleaseTime,
+			dSustainAmplitude, 
+			dStartAmplitude, 
+			dTriggerOnTime,
+			dTriggerOffTime;
 	bool	bNoteOn;
 };
 
