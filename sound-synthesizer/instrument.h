@@ -1,13 +1,16 @@
 #pragma once
 
-#include "envelope.h"
+#include "definicje.h"
+#include "envelope-adsr.h"
+
+#include "note.h"
 
 struct Instrument
 {
-	double dVolume;
+	FTYPE dVolume;
 	EnvelopeADSR env;
 
-	virtual double sound(double dTime, double dFrequency) = 0;
+	virtual FTYPE sound(const FTYPE dTime, Note n, bool& bNoteFinished) = 0;
 
 	void SetVolume(double vol);
 };

@@ -151,20 +151,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="envelope.cpp" />
+    <ClCompile Include="envelope-adsr.cpp" />
     <ClCompile Include="bell.cpp" />
-    <ClCompile Include="harmonijka.cpp" />
+    <ClCompile Include="envelope.cpp" />
     <ClCompile Include="helperfunctions.cpp" />
     <ClCompile Include="instrument.cpp" />
+    <ClCompile Include="note.cpp" />
     <ClCompile Include="sound-synthesizer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="definicje.h" />
-    <ClInclude Include="envelope.h" />
+    <ClInclude Include="envelope-adsr.h" />
     <ClInclude Include="bell.h" />
-    <ClInclude Include="harmonijka.h" />
+    <ClInclude Include="envelope.h" />
     <ClInclude Include="helperfunctions.h" />
     <ClInclude Include="instrument.h" />
+    <ClInclude Include="note.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

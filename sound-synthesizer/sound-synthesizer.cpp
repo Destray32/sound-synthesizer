@@ -1,23 +1,22 @@
 ﻿#include "olcNoiseMaker.h"
 #include "helperfunctions.h"
-#include "envelope.h"
-#include "instrument.h"
 #include "definicje.h"
 
-#include "bell.h"
-#include "harmonijka.h"
+#include "envelope.h"
+#include "note.h"
 
-double MakeNoise(double dTime);
-void Loop(double&, double&, olcNoiseMaker<int>&);
+#include "instrument.h"
+
+#include "bell.h"
+
+FTYPE MakeNoise(int nChannel, FTYPE dTime);
 void ShowKeyboard();
 
 namespace
 {
-	atomic<double>	dFrequencyOutput = 0.0;
-	double	dOcataveBaseFrequency = 110.0; // A2
-	double	d12thRootOf2 = pow(2.0, 1.0 / 12.0);
-	Instrument* instrument = nullptr;
-
+	vector<Note> vecNotes;
+	mutex muxNotes;
+	Bell bell;
 }
 
 namespace synth
@@ -30,28 +29,8 @@ namespace synth
 		return dHertz * 2.0 * PI;
 	}
 
-	// note
-	struct Note
-	{
-		Note()
-			:
-			id(0),
-			on(0.0),
-			off(0.0),
-			active(false),
-			channel(0)
-		{
-
-		}
-
-		int id;			// pozycja w skali
-		FTYPE on;		// czas w ktorym nuta została aktywowana
-		FTYPE off;		// czas w ktorym nuta została dezaktywowana
-		bool active;
-		int channel;
-	};
-
-	FTYPE osc(FTYPE dHertz, FTYPE dTime, const int nType = OSC_SINE, FTYPE dLFOHertz = 0.0, FTYPE dLFOAmplitude = 0.0)
+	FTYPE osc(const FTYPE dTime, const FTYPE dHertz, const int nType = OSC_SINE,
+		const FTYPE dLFOHertz = 0.0, const FTYPE dLFOAmplitude = 0.0, FTYPE dCustom = 50.0)
 	{
 		FTYPE dFreq = w(dHertz) * dTime + dLFOAmplitude * dHertz * sin(w(dLFOHertz) * dTime);
 
@@ -70,7 +49,7 @@ namespace synth
 		{
 			FTYPE dOutput = 0.0;
 
-			for (FTYPE n = 1.0; n < 40.0; n++)
+			for (FTYPE n = 1.0; n < dCustom; n++)
 			{
 				dOutput += (sin(n * dFreq)) / n;
 			}
@@ -102,43 +81,14 @@ namespace synth
 			return 256 * pow(1.0594630943592952645618252949463, nNoteID);
 		}
 	}
-}
 
-void Loop(double& dOcataveBaseFrequency, double& d12thRootOf2, olcNoiseMaker<int>& sound)
-{
-	int nCurrentKey = -1;
-	bool bKeyPressed = false;
-	while (1)
+	//////////////////////////////////////////////////////////////////////////////
+	// Envelope amplitude
+	FTYPE env(const FTYPE dTime, envelope& env, const FTYPE dTimeOn, const FTYPE dTimeOff)
 	{
-		bKeyPressed = false;
-		for (int k = 0; k < 16; k++)
-		{
-			if (GetAsyncKeyState((unsigned char)("ZSXCFVGBNJMK\xbcL\xbe\xbf"[k])) & 0x8000)
-			{
-				if (nCurrentKey != k)
-				{
-					dFrequencyOutput = dOcataveBaseFrequency * pow(d12thRootOf2, k);
-					instrument->env.NoteOn(sound.GetTime());
-					wcout << "\rNote On : " << sound.GetTime() << "s " << dFrequencyOutput << "Hz";
-					nCurrentKey = k;
-				}
-
-				bKeyPressed = true;
-			}
-		}
-
-		if (!bKeyPressed)
-		{
-			if (nCurrentKey != -1)
-			{
-				wcout << "\rNote Off: " << sound.GetTime() << "s                        ";
-				instrument->env.NoteOff(sound.GetTime());
-				nCurrentKey = -1;
-			}
-		}
+		return env.GetAmplitude(dTime, dTimeOn, dTimeOff);
 	}
 }
-
 
 
 void ShowKeyboard()
@@ -153,11 +103,38 @@ void ShowKeyboard()
 
 }
 
-double MakeNoise(double dTime)
+typedef bool(*lambda)(Note const& item);
+template<class T>
+void safe_remove(T& v, lambda f)
 {
-	double dOut = instrument->sound(dTime, dFrequencyOutput);
+	auto n = v.begin();
+	while (n != v.end())
+		if (!f(*n))
+			n = v.erase(n);
+		else
+			++n;
+}
 
-	return dOut * 0.10;
+FTYPE MakeNoise(int nChannel, FTYPE dTime)
+{
+	unique_lock<mutex> lm(muxNotes);
+	FTYPE dMixedOutput = 0.0;
+
+	for (auto& n : vecNotes)
+	{
+		bool bNoteFinished = false;
+		FTYPE dSound = 0;
+		if (n.channel == 2)
+			dSound = bell.sound(dTime, n, bNoteFinished);
+		dMixedOutput += dSound;
+
+		if (bNoteFinished && n.off > n.on)
+			n.active = false;
+	}
+
+	safe_remove<vector<Note>>(vecNotes, [](Note const& item) { return item.active; });
+
+	return dMixedOutput * 0.2;
 }
 
 int main()
@@ -173,9 +150,73 @@ int main()
 	// Linkowanie funkcji do obiektu
 	sound.SetUserFunction(MakeNoise);
 
-	instrument = new Harmonijka();
+	char keyboard[129];
+	memset(keyboard, ' ', 127);
+	keyboard[128] = '\0';
 
-	Loop(dOcataveBaseFrequency, d12thRootOf2, sound);
+	auto clock_old_time = chrono::high_resolution_clock::now();
+	auto clock_real_time = chrono::high_resolution_clock::now();
+	double dElapsedTime = 0.0;
+
+	while (1)
+	{
+		for (int k = 0; k < 16; k++)
+		{
+			short nKeyState = GetAsyncKeyState((unsigned char)("ZSXCFVGBNJMK\xbcL\xbe\xbf"[k]));
+
+			double dTimeNow = sound.GetTime();
+
+			// Check if note already exists in currently playing notes
+			muxNotes.lock();
+			auto noteFound = find_if(vecNotes.begin(), vecNotes.end(), [&k](Note const& item) { return item.id == k; });
+			if (noteFound == vecNotes.end())
+			{
+				// Note not found in vector
+
+				if (nKeyState & 0x8000)
+				{
+					// Key has been pressed so create a new note
+					Note n;
+					n.id = k;
+					n.on = dTimeNow;
+					n.channel = 2;
+					n.active = true;
+
+					// Add note to vector
+					vecNotes.emplace_back(n);
+				}
+				else
+				{
+					// Note not in vector, but key has been released...
+					// ...nothing to do
+				}
+			}
+			else
+			{
+				// Note exists in vector
+				if (nKeyState & 0x8000)
+				{
+					// Key is still held, so do nothing
+					if (noteFound->off > noteFound->on)
+					{
+						// Key has been pressed again during release phase
+						noteFound->on = dTimeNow;
+						noteFound->active = true;
+					}
+				}
+				else
+				{
+					// Key has been released, so switch off
+					if (noteFound->off < noteFound->on)
+					{
+						noteFound->off = dTimeNow;
+					}
+				}
+			}
+			muxNotes.unlock();
+		}
+		wcout << "\rNotes: " << vecNotes.size() << "    ";
+	}
 
 	return 0;
 }

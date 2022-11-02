@@ -1,11 +1,12 @@
 #pragma once
 
 #include "instrument.h"
+#include "note.h"
 
 struct Bell : public Instrument
 {
 	Bell();
 
-	double sound(double dTime, double dFrequency);
+	double sound(const FTYPE dTime, Note n, bool& bNoteFinished);
 };
 

@@ -1,29 +1,9 @@
 #pragma once
-#ifndef ENVELOPE_C
-#define ENVELOPE_C
 
+#include "definicje.h"
 
-
-struct EnvelopeADSR
+struct envelope
 {
-	EnvelopeADSR();
-	~EnvelopeADSR();
-
-	double GetAmplitude(double dTime);
-
-	void NoteOn(double dTimeOn);
-	void NoteOff(double dTimeOff);
-
-
-
-	double	dAttackTime, 
-			dDecayTime, 
-			dReleaseTime,
-			dSustainAmplitude, 
-			dStartAmplitude, 
-			dTriggerOnTime,
-			dTriggerOffTime;
-	bool	bNoteOn;
+	virtual FTYPE GetAmplitude(const FTYPE dTime, const FTYPE dTimeOn, const FTYPE dTimeOff) = 0;
 };
 
-#endif
