@@ -125,7 +125,7 @@ The sound-synthesizer project is a software application that allows users to cre
 
 Ensure you have the following dependencies installed on your system:
 
-* **C**
+* **C++**
 
 ###  Installation
 
@@ -144,15 +144,7 @@ cd sound-synthesizer
 3. Install the dependencies:
 
 ```sh
-gcc -o myapp main.c
-```
-
-###  Running sound-synthesizer
-
-Use the following command to run sound-synthesizer:
-
-```sh
-./myapp
+g++ -o myapp sound-synthesizer.cpp
 ```
 
 ###  Tests
