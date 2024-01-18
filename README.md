@@ -162,9 +162,7 @@ To execute tests, run:
 
 Contributions are welcome! Here are several ways you can contribute:
 
-- **[Submit Pull Requests](https://github/Destray32/sound-synthesizer/blob/main/CONTRIBUTING.md)**: Review open PRs, and submit your own PRs.
-- **[Join the Discussions](https://github/Destray32/sound-synthesizer/discussions)**: Share your insights, provide feedback, or ask questions.
-- **[Report Issues](https://github/Destray32/sound-synthesizer/issues)**: Submit bugs found or log feature requests for Sound-synthesizer.
+- **[Report Issues](https://github/Destray32.com/sound-synthesizer/issues)**: Submit bugs found or log feature requests for Sound-synthesizer.
 
 <details closed>
     <summary>Contributing Guidelines</summary>
