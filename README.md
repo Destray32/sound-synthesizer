@@ -147,16 +147,6 @@ cd sound-synthesizer
 g++ -o myapp sound-synthesizer.cpp
 ```
 
-###  Tests
-
-To execute tests, run:
-
-```sh
-/* No common unit test framework in C */
-```
-
----
-
 
 ##  Contributing
 
